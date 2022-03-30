@@ -24,15 +24,14 @@ from tkinter import filedialog as fd
 # FUNCTIONS #
 #############
 
-#This is our main program. It introduces the user to the function of the program
-#and prompts them for inputs, and then executes the functionality
+#Prompts the user for an image file and some parameters, then generates a number
+#of antichromatic images, animations, averages, and brings up the blending window
 def main():
     intro()
 
     #Get inputs
     filepath,img_name,op,lums = get_file()
-    n_th,n_sh,t_th,t_sh = get_slicen(lums)
-    
+    n_th,n_sh,t_th,t_sh = get_slice_n(lums)
 
     #Generate shatters
     print("\n\n                    !!!Let's fuck it upp!!!\n\n  ",end='')
@@ -64,6 +63,8 @@ def main():
     
 #———————————————————————————————————————————————————————————————————————————————
 
+#Calculates and outputs mean, median, mode, and outlier images, and their
+#inverses, based on inputted batch
 def gen_combos(batch,fp,imn,op):
     h,w,n = batch.shape
     specials = np.zeros((h,w,8),dtype=np.uint8)
@@ -98,25 +99,15 @@ def intro():
 
 #———————————————————————————————————————————————————————————————————————————————
 
-#Prints header
+#Prints footer
 def outro():
     print("\n                                   \u2620*BOOM*\u2620")
     print("bye.\n\n")
 
 #———————————————————————————————————————————————————————————————————————————————
 
-#Converts standard inputs to bool
-def to_bool(test):
-    y = ['y','yes','true','1']
-    n = ['n','no','false','2','0']
-    test = test.lower().strip()
-    if test in y: return True
-    if test in n: return False
-    return None
-
-#———————————————————————————————————————————————————————————————————————————————
-
-#Gets valid pathname to an image file
+#Gets valid pathname to an image file via file explorer window, opens it, calcs
+#luminance values, and returns everything separately
 def get_file():
     print(" *Who will be our victim today?")
     input("     (Press return to select your sacrifice)")
@@ -157,7 +148,7 @@ def get_file():
 
 #(Shifts, scales,) rounds, clips, converts to uint8
 def to_uint(im_arr,scaling=True):
-    if scaling and (np.min(im_arr) != np.max(im_arr)):
+    if scaling and (np.min(im_arr) != np.max(im_arr)): #Avoid div0
         im_arr -= np.min(im_arr)
         im_arr = (im_arr * (255/np.max(im_arr)))
     im_arr = np.round(im_arr)
@@ -167,7 +158,7 @@ def to_uint(im_arr,scaling=True):
 
 #———————————————————————————————————————————————————————————————————————————————
 
-def get_slicen(lums):
+def get_slice_n(lums):
     #Prompt for number of threshings
     print(" *How many Threshings shall we perform?")
     nt = -1
@@ -222,7 +213,7 @@ def get_slicen(lums):
 
 #———————————————————————————————————————————————————————————————————————————————
 
-#Shatters the given image antichromatically, according to slice and step params
+#Directs antichromatic shattering of the image
 def shatter(filepath,img_name,lums,n_th,n_sh,t_th,t_sh):
     h,w = lums.shape
     
@@ -245,6 +236,7 @@ def shatter(filepath,img_name,lums,n_th,n_sh,t_th,t_sh):
 #L = R * 299/1000 + G * 587/1000 + B * 114/1000
 #Or, Rec. 709 is:
 #L = R * 2125/10000 + G * 7154/10000 + B * 0721/10000
+#Might try one of those later
 def gen_lums(op):
     h,w,c = op.shape
     lums = np.zeros((h,w),dtype=np.float32)
@@ -257,6 +249,7 @@ def gen_lums(op):
 
 #Fast loop to generate thresholded images
 #@jit(nopython=True)
+#numba not used, so as to make output pretty
 def gen_threshed(lums,slices,filepath,filename):
     #Init batch
     h,w = lums.shape
@@ -289,6 +282,7 @@ def gen_threshed(lums,slices,filepath,filename):
 
 #Fast loop to generate stepped images
 #@jit(nopython=True)
+#numba not used, so as to make output pretty
 def gen_shattered(lums,slices,filepath,filename):
     h,w = lums.shape
     #Init batch
@@ -325,6 +319,7 @@ def gen_shattered(lums,slices,filepath,filename):
 
 #Fast loop to export the batch of images
 #@jit(nopython=True)
+#numba not used, many reasons
 def batch_img_gen(batch,filepath,img_name,n_th,n_sh,t_th,t_sh):
     #Get sizes
     h,w,n = batch.shape
@@ -405,7 +400,7 @@ def batch_img_gen(batch,filepath,img_name,n_th,n_sh,t_th,t_sh):
 
 #———————————————————————————————————————————————————————————————————————————————
 
-#Calculates the mean of a BW image batch array
+#Calculates the per-pixel mean of a BW image batch array
 def gen_mean(batch,scale=True,filepath=None,filename=None):
     #mean along the batch direction
     mean = np.mean(batch, axis=2)
@@ -426,7 +421,7 @@ def gen_mean(batch,scale=True,filepath=None,filename=None):
 
 #———————————————————————————————————————————————————————————————————————————————
 
-#Calculates the median of a BW image batch array
+#Calculates the per-pixel median of a BW image batch array
 def gen_median(batch,scale=True,filepath=None,filename=None):
     #Calc median
     median = np.median(batch, axis=2)
@@ -447,7 +442,7 @@ def gen_median(batch,scale=True,filepath=None,filename=None):
 
 #———————————————————————————————————————————————————————————————————————————————
 
-#Calculates the median of a BW image batch array
+#Calculates the per-pixel modal average of a BW image batch array
 def gen_mode(batch,scale=True,filepath=None,filename=None):
     #Fast-loop factor
     mode = make_it_count(batch)
@@ -469,6 +464,7 @@ def gen_mode(batch,scale=True,filepath=None,filename=None):
 
 #———————————————————————————————————————————————————————————————————————————————
 
+#Fast loop for counting the mode--REALLY SLOW WITHOUT NUMBA
 @jit(nopython=True)
 def make_it_count(batch):
     #Round & get sizes
@@ -502,7 +498,7 @@ def make_it_count(batch):
 
 #———————————————————————————————————————————————————————————————————————————————
 
-#Generates image containing Luma Outliers
+#Generates image containing per-pixel outliers from a batch of BW images
 def gen_outliers(batch,op,scale=True,filepath=None,filename=None):
     #Generate lum vals from original picture
     op_lums = gen_lums(op)
@@ -535,6 +531,7 @@ def gen_outliers(batch,op,scale=True,filepath=None,filename=None):
 
 #———————————————————————————————————————————————————————————————————————————————
 
+#Fast loop for constructing the final image (not so slow without numba)
 @jit(nopython=True)
 def lie_out(h,w,batch,outlier_idx):
     outliers = np.empty((h,w),dtype=np.uint8)
@@ -545,9 +542,11 @@ def lie_out(h,w,batch,outlier_idx):
 
 #———————————————————————————————————————————————————————————————————————————————
 #Creates a plot with sliders to control the amt of each image.
-#MUST BE EVEN NUM_IMGS OR COULD B UNEXPECED BEHAVIOR
+#Not very well designed in terms of modularity. Also surprisingly slow. Oh well.
 def disp_mixer(batch,names,outpath,filename):
-    #Init
+    #——————————————————————————————
+    #INIT
+    
     h,w,n = batch.shape
     w_max = 1.0
     w_min = -w_max
@@ -639,38 +638,33 @@ def disp_mixer(batch,names,outpath,filename):
     #Render the window
     plt.show()
 
-
 #———————————————————————————————————————————————————————————————————————————————
 
-#Gets a reasonable string of weights
+#Gets a reasonable string of weights for exportation
 def weight_str(weights):
     return '[' + ' '.join([format(n,'.4f') for n in weights]) + ']'
 
+#———————————————————————————————————————————————————————————————————————————————
+
 #Weighted average along axis provided
 def weightem(batch,weights,axis):
-    # np.broadcast_to puts the new axis as the last axis, so 
-    # we swap the given axis with the last one, to determine the
-    # corresponding array shape. np.swapaxes only returns a view
-    # of the supplied array, so no data is copied unnecessarily.
+    #Reshape
     nushape = (np.swapaxes(batch, batch.ndim-1, axis)).shape
-
-    # Broadcast to an array with the shape as above. Again, 
-    # no data is copied, we only get a new look at the existing data.
     weights = np.broadcast_to(weights, nushape)
-
-    # Swap back the axes. As before, this only changes our "point of view".
     weights = np.swapaxes(weights, batch.ndim-1, axis)
-
-    #Multiply out
+       
+    #Find weighted average
     conglomeration = batch * weights
-
-    #Sum up
     conglomeration = np.sum(conglomeration,2)
     
-    #shif n scale
+    #Return as uint
     return to_uint(conglomeration)
 
 #———————————————————————————————————————————————————————————————————————————————
+
+##############
+# Run main() #
+##############
 
 main()
 
