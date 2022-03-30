@@ -1,5 +1,5 @@
 # Antichromatizer
-Generates various antichromatic images from an input image, generates animations, and allows for directed blending.
+A silly little program. Generates various antichromatic images from an input image, generates animations, and allows for directed blending.
 
 WARNING: No guarantees are made about the safety or stability of this product.
 
