@@ -1,5 +1,5 @@
 #——————————————————————————————————————————————————————————————————————————————#
-# This program takes any picture and fucks it up.
+# This program takes any picture and fucks it up.                              #
 #——————————————————————————————————————————————————————————————————————————————#
 
 
@@ -20,9 +20,9 @@ from tkinter import filedialog as fd
 #———————————————————————————————————————————————————————————————————————————————
 
 
-#############
+#———————————#
 # FUNCTIONS #
-#############
+#———————————#
 
 #Prompts the user for an image file and some parameters, then generates a number
 #of antichromatic images, animations, averages, and brings up the blending window
@@ -662,9 +662,9 @@ def weightem(batch,weights,axis):
 
 #———————————————————————————————————————————————————————————————————————————————
 
-##############
+#————————————#
 # Run main() #
-##############
+#————————————#
 
 main()
 
