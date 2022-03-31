@@ -3,6 +3,8 @@ A silly little program. Generates various antichromatic images from an input ima
 
 WARNING: No guarantees are made about the safety or stability of this product.
 
+No command line arguments, there is a minimal UI once run.
+
 You may utilize the .yml file to automatically set up the required Python environment with Anaconda, or you can manually install the required packages. You may want to update conda before creating the environment:
 
 	conda update -n base conda
