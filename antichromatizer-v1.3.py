@@ -43,9 +43,9 @@ def main():
     #Generate combos:
     combos = np.empty((h,w,16),dtype=np.uint8)
     combos[...,:8] = gen_combos(batch[...,:n_th],filepath,img_name + \
-                            "-THRESH.png",op)
+                            "-THRESH",op)
     combos[...,8:] = gen_combos(batch[...,n_th:],filepath,img_name + \
-                            "-SHATT.png",op)
+                            "-SHATT",op)
     
     print("\n\n\n                              ***Synthesizing***")
     print("                                      ...\n\n")
