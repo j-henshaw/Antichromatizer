@@ -128,6 +128,7 @@ def get_file():
     #Open original file real quick
     op = img.open(img_path)
     op = (np.array(op))[:,:,0:3] #Discard transparency channel
+    
 
     #Generate separate strings
     img_path = img_path.split("/")
@@ -138,9 +139,11 @@ def get_file():
     print("\n                 " + img_name + ", eh?")
     print("  ...Very well\n")
 
+    #Toss file ext.
+    img_name = (img_name.split('.'))[0]
+
     #Luminance values will be needed
     lums = gen_lums(op)
-    img_name = (img_name.split('.'))[0] #Toss file ext.
     
     return filepath,img_name,op,lums
 
@@ -239,17 +242,18 @@ def shatter(filepath,img_name,lums,n_th,n_sh,t_th,t_sh):
 #Might try one of those later
 def gen_lums(op):
     h,w,c = op.shape
-    lums = np.zeros((h,w),dtype=np.float32)
-    #Calculate luminances of each pixel in the image
-    for i in range(c):
-        lums += np.square((op[...,i]).astype(np.float32))
-    return np.sqrt(lums)
+    
+    #Calculate euclidean luminances for entire the image
+    lums = op.astype(np.float32)
+    lums = (np.sqrt(np.sum(np.square(op * 1.0),axis=-1)).reshape(h,w))
+    lums = to_uint(lums)
+
+    return lums
     
 #———————————————————————————————————————————————————————————————————————————————
 
 #Fast loop to generate thresholded images
-#@jit(nopython=True)
-#numba not used, so as to make output pretty
+@jit(nopython=True)
 def gen_threshed(lums,slices,filepath,filename):
     #Init batch
     h,w = lums.shape
@@ -259,22 +263,10 @@ def gen_threshed(lums,slices,filepath,filename):
     dimmest = np.min(lums)
     brightest = np.max(lums)
     step = (brightest - dimmest) / (slices+1)
-    
-    perc = 0
-    print("\u2620 \u2620 \u2620 ...",end='')
+
     #Test each threshold, quantize pixels over & under ——> 0 & 255
     for thresh in range(1,slices+1):
-        #Subtract threshold_num * step_size from lums
-        shard = lums - np.full((h,w), thresh*step)
-        #Round to integers, clip to [0,1], and scale by 255
-        shard = np.clip(np.round(shard),0,1) * 255
-        #Put abs in the batch, in case of -0 elements
-        batch[...,thresh-1] = np.abs(shard)
-        #Print progress
-        if thresh/slices >= perc:
-            print("\u2620...",end='')
-            perc += 1/10
-    print(" \u2620 \u2620 \u2620")
+        batch[...,thresh-1] = (np.where(lums > thresh*step, 255, 0))
     
     return batch
 
